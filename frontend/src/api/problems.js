@@ -9,4 +9,8 @@ export const problemApi = {
     const response = await axiosInstance.get(`/problems/${id}`);
     return response.data;
   },
+  createProblem: async (payload) => {
+    const response = await axiosInstance.post("/problems", payload);
+    return response.data;
+  },
 };

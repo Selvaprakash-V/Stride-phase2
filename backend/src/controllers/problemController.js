@@ -23,3 +23,57 @@ export async function getProblemById(req, res) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
+
+export async function createProblem(req, res) {
+  try {
+    const user = req.user; // attached by protectRoute
+
+    if (!user || user.role !== "host") {
+      return res.status(403).json({ message: "Only hosts can create problems" });
+    }
+
+    const {
+      id,
+      title,
+      difficulty,
+      category,
+      descriptionText,
+      notes,
+      examples,
+      constraints,
+      starterCode,
+      expectedOutput,
+    } = req.body;
+
+    if (!id || !title || !difficulty || !category || !descriptionText) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const existing = await Problem.findOne({ id });
+    if (existing) {
+      return res.status(409).json({ message: "Problem with this id already exists" });
+    }
+
+    const problem = new Problem({
+      id,
+      title,
+      difficulty,
+      category,
+      description: {
+        text: descriptionText,
+        notes: notes || [],
+      },
+      examples: examples || [],
+      constraints: constraints || [],
+      starterCode: starterCode || {},
+      expectedOutput: expectedOutput || {},
+    });
+
+    await problem.save();
+
+    res.status(201).json({ problem });
+  } catch (error) {
+    console.error("Error in createProblem controller:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}

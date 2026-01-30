@@ -1,4 +1,5 @@
 import Session from "../models/Session.js";
+import User from "../models/User.js";
 
 export async function getMe(req, res) {
   try {
@@ -20,6 +21,7 @@ export async function getMe(req, res) {
         email: user.email,
         profileImage: user.profileImage,
         clerkId: user.clerkId,
+        role: user.role,
         createdAt: user.createdAt,
       },
       stats: {
@@ -31,6 +33,44 @@ export async function getMe(req, res) {
     });
   } catch (error) {
     console.error("Error in getMe controller:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function updateMe(req, res) {
+  try {
+    const authUser = req.user; // attached by protectRoute
+    const { role } = req.body;
+
+    const allowedRoles = ["host", "participant"];
+    if (role && !allowedRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+
+    const user = await User.findById(authUser._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (role) {
+      user.role = role;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage,
+        clerkId: user.clerkId,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Error in updateMe controller:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

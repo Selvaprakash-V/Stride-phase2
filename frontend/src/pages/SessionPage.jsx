@@ -81,12 +81,64 @@ function SessionPage() {
     setOutput(null);
   };
 
+  // Helpers to compare execution output with expected output
+  const normalizeOutput = (rawOutput) => {
+    if (!rawOutput) return "";
+
+    return rawOutput
+      .trim()
+      .split("\n")
+      .map((line) =>
+        line
+          .trim()
+          .replace(/\[\s+/g, "[") // remove spaces after [
+          .replace(/\s+\]/g, "]") // remove spaces before ]
+          .replace(/\s*,\s*/g, ",") // normalize spaces around commas
+      )
+      .filter((line) => line.length > 0)
+      .join("\n");
+  };
+
+  const checkIfTestsPassed = (actualOutput, expectedOutput) => {
+    const normalizedActual = normalizeOutput(actualOutput);
+    const normalizedExpected = normalizeOutput(expectedOutput);
+
+    return normalizedActual === normalizedExpected;
+  };
+
   const handleRunCode = async () => {
     setIsRunning(true);
     setOutput(null);
 
     const result = await executeCode(selectedLanguage, code);
-    setOutput(result);
+
+    // Interviewer (host) sees full output + logs
+    if (isHost) {
+      setOutput(result);
+      setIsRunning(false);
+      return;
+    }
+
+    // Interviewee: only see pass/fail style feedback
+    if (result.success && problemData?.expectedOutput?.[selectedLanguage]) {
+      const expectedOutput = problemData.expectedOutput[selectedLanguage];
+      const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
+
+      if (testsPassed) {
+        setOutput({ success: true, output: "All tests passed" });
+      } else {
+        setOutput({
+          success: false,
+          error: "Some tests failed. Try adjusting your solution.",
+        });
+      }
+    } else {
+      setOutput({
+        success: false,
+        error: "Code execution failed or problem is not configured for tests.",
+      });
+    }
+
     setIsRunning(false);
   };
 
