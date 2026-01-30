@@ -339,6 +339,54 @@ print(maxArea([1,1]))  # Expected: 1`,
       java: "49\n1",
     },
   },
+  "contains-duplicate": {
+  id: "contains-duplicate",
+  title: "Contains Duplicate",
+  difficulty: "Easy",
+  category: "Array • Hash Table",
+  description: {
+    text: "Given an integer array nums, return true if any value appears at least twice in the array, and return false if every element is distinct.",
+    notes: [
+      "You must check if any number repeats.",
+      "Return a boolean value."
+    ],
+  },
+  examples: [
+    {
+      input: "nums = [1,2,3,1]",
+      output: "true",
+      explanation: "The element 1 appears twice."
+    },
+    {
+      input: "nums = [1,2,3,4]",
+      output: "false"
+    }
+  ],
+  constraints: [
+    "1 ≤ nums.length ≤ 10⁵",
+    "-10⁹ ≤ nums[i] ≤ 10⁹"
+  ],
+  starterCode: {
+    javascript: `function containsDuplicate(nums) {
+  // Write your solution here
+}`,
+    python: `def containsDuplicate(nums):
+    # Write your solution here
+    pass`,
+    java: `class Solution {
+    public static boolean containsDuplicate(int[] nums) {
+        // Write your solution here
+        return false;
+    }
+}`
+  },
+  expectedOutput: {
+    javascript: "true\nfalse",
+    python: "True\nFalse",
+    java: "true\nfalse"
+  }
+},
+
 };
 
 export const LANGUAGE_CONFIG = {
