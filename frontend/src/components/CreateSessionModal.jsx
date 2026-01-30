@@ -1,5 +1,5 @@
 import { Code2Icon, LoaderIcon, PlusIcon } from "lucide-react";
-import { PROBLEMS } from "../data/problems";
+import { useProblems } from "../hooks/useProblems";
 
 function CreateSessionModal({
   isOpen,
@@ -9,7 +9,8 @@ function CreateSessionModal({
   onCreateRoom,
   isCreating,
 }) {
-  const problems = Object.values(PROBLEMS);
+  const { data, isLoading } = useProblems();
+  const problems = data?.problems || [];
 
   if (!isOpen) return null;
 
@@ -32,20 +33,22 @@ function CreateSessionModal({
               onChange={(e) => {
                 const selectedProblem = problems.find((p) => p.title === e.target.value);
                 setRoomConfig({
-                  difficulty: selectedProblem.difficulty,
+                  difficulty: selectedProblem?.difficulty || "Easy",
                   problem: e.target.value,
                 });
               }}
+              disabled={isLoading}
             >
               <option value="" disabled>
-                Choose a coding problem...
+                {isLoading ? "Loading problems..." : "Choose a coding problem..."}
               </option>
 
-              {problems.map((problem) => (
+              {!isLoading &&
+                problems.map((problem) => (
                 <option key={problem.id} value={problem.title}>
                   {problem.title} ({problem.difficulty})
                 </option>
-              ))}
+                ))}
             </select>
           </div>
 

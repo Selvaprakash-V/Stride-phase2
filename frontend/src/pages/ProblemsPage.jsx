@@ -1,12 +1,13 @@
 import { Link } from "react-router";
 import Navbar from "../components/Navbar";
 
-import { PROBLEMS } from "../data/problems";
 import { ChevronRightIcon, Code2Icon } from "lucide-react";
 import { getDifficultyBadgeClass } from "../lib/utils";
+import { useProblems } from "../hooks/useProblems";
 
 function ProblemsPage() {
-  const problems = Object.values(PROBLEMS);
+  const { data, isLoading } = useProblems();
+  const problems = data?.problems || [];
 
   const easyProblemsCount = problems.filter((p) => p.difficulty === "Easy").length;
   const mediumProblemsCount = problems.filter((p) => p.difficulty === "Medium").length;
@@ -27,7 +28,9 @@ function ProblemsPage() {
 
         {/* PROBLEMS LIST */}
         <div className="space-y-4">
-          {problems.map((problem) => (
+          {isLoading && <div className="text-base-content/60">Loading problems...</div>}
+          {!isLoading &&
+            problems.map((problem) => (
             <Link
               key={problem.id}
               to={`/problem/${problem.id}`}
@@ -62,7 +65,7 @@ function ProblemsPage() {
                 </div>
               </div>
             </Link>
-          ))}
+            ))}
         </div>
 
         {/* STATS FOOTER */}
