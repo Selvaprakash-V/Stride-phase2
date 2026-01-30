@@ -5,14 +5,32 @@ export const protectRoute = [
   requireAuth(),
   async (req, res, next) => {
     try {
-      const clerkId = req.auth().userId;
+      const { userId, sessionClaims } = req.auth();
+      const clerkId = userId;
 
       if (!clerkId) return res.status(401).json({ message: "Unauthorized - invalid token" });
 
-      // find user in db by clerk ID
-      const user = await User.findOne({ clerkId });
+      // Try to find existing user by Clerk ID
+      let user = await User.findOne({ clerkId });
 
-      if (!user) return res.status(404).json({ message: "User not found" });
+      // Auto-create user in MongoDB on first authenticated request if missing
+      if (!user) {
+        const givenName = sessionClaims?.given_name;
+        const familyName = sessionClaims?.family_name;
+        const fullName = [givenName, familyName].filter(Boolean).join(" ");
+
+        const emailFromClaims =
+          sessionClaims?.email ||
+          sessionClaims?.email_address ||
+          sessionClaims?.email_addresses?.[0]?.email_address;
+
+        user = await User.create({
+          clerkId,
+          name: fullName || "User",
+          email: emailFromClaims || `${clerkId}@example.com`,
+          profileImage: "",
+        });
+      }
 
       // attach user to req
       req.user = user;
