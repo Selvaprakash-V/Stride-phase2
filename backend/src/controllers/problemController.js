@@ -31,6 +31,8 @@ export async function markProblemSolved(req, res) {
     const userId = req.user._id;
     const { problem, problemId, difficulty, sessionId, code, language } = req.body;
 
+    console.log("markProblemSolved called:", { userId, problem, difficulty, sessionId });
+
     if (!problem || !difficulty) {
       return res.status(400).json({ message: "Problem and difficulty are required" });
     }
@@ -44,6 +46,7 @@ export async function markProblemSolved(req, res) {
       if (language) existingSolved.language = language;
       existingSolved.solvedAt = new Date();
       await existingSolved.save();
+      console.log("Problem already solved, record updated:", existingSolved._id);
       return res.status(200).json({ message: "Problem already solved, record updated", solvedProblem: existingSolved });
     }
 
@@ -58,6 +61,7 @@ export async function markProblemSolved(req, res) {
       language: language || "javascript",
     });
 
+    console.log("New solved problem created:", solvedProblem._id);
     res.status(201).json({ message: "Problem marked as solved", solvedProblem });
   } catch (error) {
     console.error("Error in markProblemSolved controller:", error);

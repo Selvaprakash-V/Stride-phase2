@@ -8,6 +8,8 @@ import OutputPanel from "../components/OutputPanel";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import { executeCode } from "../lib/piston";
 import { useProblems } from "../hooks/useProblems";
+import { problemApi } from "../api/problems";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
@@ -15,6 +17,7 @@ import confetti from "canvas-confetti";
 function ProblemPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [currentProblemId, setCurrentProblemId] = useState("two-sum");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
@@ -24,6 +27,18 @@ function ProblemPage() {
   const { data, isLoading } = useProblems();
   const allProblems = data?.problems || [];
   const currentProblem = allProblems.find((p) => p.id === currentProblemId);
+
+  // Mutation to mark problem as solved
+  const markSolvedMutation = useMutation({
+    mutationFn: (payload) => problemApi.markProblemSolved(payload),
+    onSuccess: (data) => {
+      console.log("Problem marked as solved:", data);
+      queryClient.invalidateQueries({ queryKey: ["my-solved-problems"] });
+    },
+    onError: (error) => {
+      console.error("Error marking problem as solved:", error);
+    },
+  });
 
   // update problem when URL param changes
   useEffect(() => {
@@ -104,6 +119,16 @@ function ProblemPage() {
       if (testsPassed) {
         triggerConfetti();
         toast.success("All tests passed! Great job!");
+        
+        // Mark problem as solved for the user's profile
+        markSolvedMutation.mutate({
+          problem: currentProblem.title,
+          problemId: currentProblem.id,
+          difficulty: currentProblem.difficulty || "easy",
+          sessionId: null, // No session - solved independently
+          code: code,
+          language: selectedLanguage,
+        });
       } else {
         toast.error("Tests failed. Check your output!");
       }

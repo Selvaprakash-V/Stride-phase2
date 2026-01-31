@@ -34,8 +34,12 @@ function SessionPage() {
   // Mutation to mark problem as solved
   const markSolvedMutation = useMutation({
     mutationFn: (payload) => problemApi.markProblemSolved(payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Problem marked as solved:", data);
       queryClient.invalidateQueries({ queryKey: ["my-solved-problems"] });
+    },
+    onError: (error) => {
+      console.error("Error marking problem as solved:", error);
     },
   });
 
@@ -139,11 +143,18 @@ function SessionPage() {
         setOutput({ success: true, output: "All tests passed! 🎉" });
         
         // Mark the problem as solved for the participant
+        console.log("Marking problem as solved:", {
+          problem: session?.problem,
+          problemId: problemData?.id || "",
+          difficulty: session?.difficulty || "easy",
+          sessionId: session?._id,
+        });
+        
         markSolvedMutation.mutate({
           problem: session?.problem,
           problemId: problemData?.id || "",
           difficulty: session?.difficulty || "easy",
-          sessionId: id,
+          sessionId: session?._id,
           code: code,
           language: selectedLanguage,
         });
