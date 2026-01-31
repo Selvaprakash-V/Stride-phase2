@@ -36,6 +36,16 @@ function ProfilePage() {
     mutationFn: (payload) => problemApi.createProblem(payload),
   });
 
+  const syncUsersMutation = useMutation({
+    mutationFn: () => userApi.syncUsersFromClerk(),
+    onSuccess: (data) => {
+      alert(`Synced ${data.updatedCount} users from Clerk!`);
+    },
+    onError: (error) => {
+      alert(`Error syncing users: ${error.message}`);
+    },
+  });
+
   return (
     <div className="min-h-screen bg-base-300">
       <Navbar />
@@ -53,18 +63,22 @@ function ProfilePage() {
                   <div className="w-16 rounded-full">
                     <img
                       src={
-                        profile.profileImage ||
                         clerkUser?.imageUrl ||
+                        profile.profileImage ||
                         "https://api.dicebear.com/9.x/initials/svg?seed=" +
-                          encodeURIComponent(profile.name || "User")
+                          encodeURIComponent(clerkUser?.firstName || profile.firstName || "User")
                       }
-                      alt={profile.name}
+                      alt={clerkUser?.fullName || profile.name}
                     />
                   </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold">{profile.name}</h2>
-                  <p className="text-base-content/70">{profile.email}</p>
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold">
+                    {clerkUser?.firstName || profile.firstName} {clerkUser?.lastName || profile.lastName}
+                  </h2>
+                  <p className="text-base-content/70">
+                    {clerkUser?.primaryEmailAddress?.emailAddress || profile.email}
+                  </p>
                   <p className="text-xs text-base-content/60 mt-1">
                     Joined on {new Date(profile.createdAt).toLocaleDateString()}
                   </p>
@@ -134,16 +148,35 @@ function ProfilePage() {
               </div>
             )}
 
-            {/* HOST-ONLY: CREATE PROBLEM */}
+            {/* HOST-ONLY: SYNC USERS & CREATE PROBLEM */}
             {profile.role === "host" && (
-              <div className="card bg-base-100 shadow-lg">
-                <div className="card-body space-y-4">
-                  <h2 className="card-title">Create a New Problem</h2>
-                  <p className="text-sm text-base-content/70">
-                    Problems you create will be available like other practice problems.
-                  </p>
+              <>
+                {/* SYNC USERS FROM CLERK */}
+                <div className="card bg-base-100 shadow-lg">
+                  <div className="card-body">
+                    <h2 className="card-title">Sync Users</h2>
+                    <p className="text-sm text-base-content/70">
+                      Sync all user data from Clerk to update names and emails in the database.
+                    </p>
+                    <button
+                      className="btn btn-secondary mt-2 w-fit"
+                      onClick={() => syncUsersMutation.mutate()}
+                      disabled={syncUsersMutation.isPending}
+                    >
+                      {syncUsersMutation.isPending ? "Syncing..." : "Sync Users from Clerk"}
+                    </button>
+                  </div>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* CREATE PROBLEM */}
+                <div className="card bg-base-100 shadow-lg">
+                  <div className="card-body space-y-4">
+                    <h2 className="card-title">Create a New Problem</h2>
+                    <p className="text-sm text-base-content/70">
+                      Problems you create will be available like other practice problems.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="label">
                         <span className="label-text">Problem ID (slug)</span>
@@ -296,6 +329,7 @@ function ProfilePage() {
                   </div>
                 </div>
               </div>
+              </>
             )}
           </div>
         )}

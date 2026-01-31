@@ -21,13 +21,14 @@ function DashboardPage() {
   const { data: activeSessionsData, isLoading: loadingActiveSessions } = useActiveSessions();
   const { data: recentSessionsData, isLoading: loadingRecentSessions } = useMyRecentSessions();
 
-  const handleCreateRoom = () => {
+  const handleCreateRoom = (participantId = null) => {
     if (!roomConfig.problem || !roomConfig.difficulty) return;
 
     createSessionMutation.mutate(
       {
         problem: roomConfig.problem,
         difficulty: roomConfig.difficulty.toLowerCase(),
+        participantId: participantId,
       },
       {
         onSuccess: (data) => {

@@ -1,9 +1,10 @@
 import { chatClient, streamClient } from "../lib/stream.js";
 import Session from "../models/Session.js";
+import User from "../models/User.js";
 
 export async function createSession(req, res) {
   try {
-    const { problem, difficulty } = req.body;
+    const { problem, difficulty, participantId } = req.body;
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
@@ -11,11 +12,27 @@ export async function createSession(req, res) {
       return res.status(400).json({ message: "Problem and difficulty are required" });
     }
 
+    // If participantId is provided, verify the user exists
+    let participant = null;
+    if (participantId) {
+      participant = await User.findById(participantId);
+      if (!participant) {
+        return res.status(404).json({ message: "Selected participant not found" });
+      }
+      if (participant._id.toString() === userId.toString()) {
+        return res.status(400).json({ message: "Cannot add yourself as participant" });
+      }
+    }
+
     // generate a unique call id for stream video
     const callId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    // create session in db
-    const session = await Session.create({ problem, difficulty, host: userId, callId });
+    // create session in db with optional participant
+    const sessionData = { problem, difficulty, host: userId, callId };
+    if (participant) {
+      sessionData.participant = participant._id;
+    }
+    const session = await Session.create(sessionData);
 
     // create stream video call
     await streamClient.video.call("default", callId).getOrCreate({
@@ -25,11 +42,16 @@ export async function createSession(req, res) {
       },
     });
 
-    // chat messaging
+    // chat messaging - include participant if selected
+    const members = [clerkId];
+    if (participant) {
+      members.push(participant.clerkId);
+    }
+
     const channel = chatClient.channel("messaging", callId, {
       name: `${problem} Session`,
       created_by_id: clerkId,
-      members: [clerkId],
+      members: members,
     });
 
     await channel.create();
