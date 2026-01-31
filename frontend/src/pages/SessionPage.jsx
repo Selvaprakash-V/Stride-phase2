@@ -14,6 +14,8 @@ import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../components/VideoCallUI";
 import { useProblems } from "../hooks/useProblems";
+import { problemApi } from "../api/problems";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 function SessionPage() {
   const navigate = useNavigate();
@@ -21,12 +23,21 @@ function SessionPage() {
   const { user } = useUser();
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
   const { data: problemsData, isLoading: loadingProblems } = useProblems();
 
   const joinSessionMutation = useJoinSession();
   const endSessionMutation = useEndSession();
+
+  // Mutation to mark problem as solved
+  const markSolvedMutation = useMutation({
+    mutationFn: (payload) => problemApi.markProblemSolved(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-solved-problems"] });
+    },
+  });
 
   const session = sessionData?.session;
   const isHost = session?.host?.clerkId === user?.id;
@@ -125,7 +136,17 @@ function SessionPage() {
       const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
 
       if (testsPassed) {
-        setOutput({ success: true, output: "All tests passed" });
+        setOutput({ success: true, output: "All tests passed! 🎉" });
+        
+        // Mark the problem as solved for the participant
+        markSolvedMutation.mutate({
+          problem: session?.problem,
+          problemId: problemData?.id || "",
+          difficulty: session?.difficulty || "easy",
+          sessionId: id,
+          code: code,
+          language: selectedLanguage,
+        });
       } else {
         setOutput({
           success: false,

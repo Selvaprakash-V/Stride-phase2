@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/clerk-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { useUserProfile } from "../hooks/useUserProfile";
@@ -13,6 +13,15 @@ function ProfilePage() {
 
   const profile = data?.user;
   const stats = data?.stats;
+
+  // Fetch solved problems
+  const { data: solvedData, isLoading: loadingSolved } = useQuery({
+    queryKey: ["my-solved-problems"],
+    queryFn: problemApi.getMySolvedProblems,
+  });
+
+  const solvedProblems = solvedData?.solvedProblems || [];
+  const solvedStats = solvedData?.stats || { total: 0, easy: 0, medium: 0, hard: 0 };
 
   const [roleDraft, setRoleDraft] = useState(profile?.role || "participant");
   const [problemForm, setProblemForm] = useState({
@@ -147,6 +156,81 @@ function ProfilePage() {
                 </div>
               </div>
             )}
+
+            {/* SOLVED PROBLEMS SECTION */}
+            <div className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <h2 className="card-title mb-4">Problems Solved</h2>
+                
+                {/* Solved Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                  <div className="stat bg-base-200 rounded-lg p-4">
+                    <div className="stat-title text-xs">Total Solved</div>
+                    <div className="stat-value text-2xl text-primary">{solvedStats.total}</div>
+                  </div>
+                  <div className="stat bg-green-900/20 rounded-lg p-4">
+                    <div className="stat-title text-xs text-green-400">Easy</div>
+                    <div className="stat-value text-2xl text-green-400">{solvedStats.easy}</div>
+                  </div>
+                  <div className="stat bg-yellow-900/20 rounded-lg p-4">
+                    <div className="stat-title text-xs text-yellow-400">Medium</div>
+                    <div className="stat-value text-2xl text-yellow-400">{solvedStats.medium}</div>
+                  </div>
+                  <div className="stat bg-red-900/20 rounded-lg p-4">
+                    <div className="stat-title text-xs text-red-400">Hard</div>
+                    <div className="stat-value text-2xl text-red-400">{solvedStats.hard}</div>
+                  </div>
+                </div>
+
+                {/* Solved Problems History */}
+                <h3 className="font-semibold text-sm text-base-content/70 mb-2">Recent History</h3>
+                {loadingSolved ? (
+                  <p className="text-base-content/50">Loading solved problems...</p>
+                ) : solvedProblems.length === 0 ? (
+                  <p className="text-base-content/50">No problems solved yet. Start solving!</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="table table-sm">
+                      <thead>
+                        <tr>
+                          <th>Problem</th>
+                          <th>Difficulty</th>
+                          <th>Solved On</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {solvedProblems.slice(0, 10).map((sp) => (
+                          <tr key={sp._id}>
+                            <td className="font-medium">{sp.problem}</td>
+                            <td>
+                              <span
+                                className={`badge badge-sm ${
+                                  sp.difficulty.toLowerCase() === "easy"
+                                    ? "badge-success"
+                                    : sp.difficulty.toLowerCase() === "medium"
+                                    ? "badge-warning"
+                                    : "badge-error"
+                                }`}
+                              >
+                                {sp.difficulty}
+                              </span>
+                            </td>
+                            <td className="text-base-content/60">
+                              {new Date(sp.solvedAt).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {solvedProblems.length > 10 && (
+                      <p className="text-xs text-base-content/50 mt-2">
+                        Showing 10 of {solvedProblems.length} solved problems
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* HOST-ONLY: SYNC USERS & CREATE PROBLEM */}
             {profile.role === "host" && (

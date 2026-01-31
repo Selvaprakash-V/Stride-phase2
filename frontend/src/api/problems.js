@@ -13,4 +13,12 @@ export const problemApi = {
     const response = await axiosInstance.post("/problems", payload);
     return response.data;
   },
+  markProblemSolved: async (payload) => {
+    const response = await axiosInstance.post("/problems/solved", payload);
+    return response.data;
+  },
+  getMySolvedProblems: async () => {
+    const response = await axiosInstance.get("/problems/my-solved");
+    return response.data;
+  },
 };
