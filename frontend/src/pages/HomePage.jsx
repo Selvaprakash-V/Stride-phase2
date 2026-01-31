@@ -49,7 +49,6 @@ function HomePage() {
           {/* LEFT CONTENT */}
           <div className="space-y-8">
             <div className="badge badge-primary badge-lg">
-              <ZapIcon className="size-4" />
               Real-time Collaboration
             </div>
 
